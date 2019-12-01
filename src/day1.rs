@@ -33,13 +33,9 @@ pub fn solve_part_2(modules: &[u32]) -> u32 {
                 let mut current = get_fuel_required(fuel_required);
                 let mut sum = current;
 
-                loop {
-                    if current > 0 {
-                        current = get_fuel_required(current);
-                        sum += current;
-                    } else {
-                        break;
-                    }
+                while current > 0 {
+                    current = get_fuel_required(current);
+                    sum += current;
                 }
 
                 sum

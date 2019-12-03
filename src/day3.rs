@@ -27,7 +27,7 @@ impl Position {
         }
     }
 
-    pub fn distance(&self, other: &Position) -> i32 {
+    pub fn distance(self, other: Position) -> i32 {
         (self.x.abs() - other.x.abs()) + (self.y.abs() - other.y.abs())
     }
 }
@@ -61,42 +61,53 @@ impl FromIterator<Direction> for Wire {
 }
 
 impl Wire {
-    pub fn coordinates(&self) -> HashSet<Position> {
-        let coordinates = {
-            let mut tmp_positions = HashSet::<Position>::new();
-            let mut current_pos = Position::new((0, 0));
+    pub fn positions(&self) -> Vec<Position> {
+        let mut positions = Vec::<Position>::new();
+        let mut current_pos = Position::new((0, 0));
 
-            for direction in &self.0 {
-                let new_pos = Position::new(match direction {
-                    Direction::Up(len) => (current_pos.x, current_pos.y + *len),
-                    Direction::Down(len) => (current_pos.x, current_pos.y - *len),
-                    Direction::Left(len) => (current_pos.x - *len, current_pos.y),
-                    Direction::Right(len) => (current_pos.x + *len, current_pos.y),
-                });
+        for direction in &self.0 {
+            match direction {
+                Direction::Left(len) => {
+                    ((current_pos.x - *len)..=current_pos.x)
+                        .rev()
+                        .skip(1)
+                        .for_each(|x| positions.push(Position::new((x, current_pos.y))));
 
-                for x in current_pos.x..=new_pos.x {
-                    for y in current_pos.y..=new_pos.y {
-                        tmp_positions.insert(Position::new((x, y)));
-                    }
+                    current_pos.x -= *len
                 }
+                Direction::Right(len) => {
+                    (current_pos.x..=current_pos.x + *len)
+                        .skip(1)
+                        .for_each(|x| positions.push(Position::new((x, current_pos.y))));
 
-                current_pos = new_pos;
+                    current_pos.x += *len
+                }
+                Direction::Up(len) => {
+                    (current_pos.y..=current_pos.y + *len)
+                        .skip(1)
+                        .for_each(|y| positions.push(Position::new((current_pos.x, y))));
+
+                    current_pos.y += *len
+                }
+                Direction::Down(len) => {
+                    ((current_pos.y - *len)..=current_pos.y)
+                        .rev()
+                        .skip(1)
+                        .for_each(|y| positions.push(Position::new((current_pos.x, y))));
+
+                    current_pos.y -= *len
+                }
             }
+        }
 
-            tmp_positions
-        };
-
-        coordinates
+        positions
     }
 
     pub fn intersections(&self, wire: &Wire) -> Vec<Position> {
-        let wire2_coordinates = wire.coordinates();
+        let positions_a = HashSet::<Position>::from_iter(self.positions());
+        let positions_b = HashSet::<Position>::from_iter(wire.positions());
 
-        self.coordinates()
-            .iter()
-            .filter(|&c| wire2_coordinates.contains(c))
-            .copied()
-            .collect()
+        positions_a.intersection(&positions_b).copied().collect()
     }
 }
 
@@ -120,7 +131,33 @@ pub fn solve_part_1(wires: &[Wire]) -> i32 {
     wires[0]
         .intersections(&wires[1])
         .iter()
-        .map(|pos| pos.distance(&center))
+        .map(|pos| pos.distance(center))
+        .min()
+        .unwrap()
+}
+
+#[aoc(day3, part2)]
+pub fn solve_part_2(wires: &[Wire]) -> usize {
+    let intersections = wires[0].intersections(&wires[1]);
+    let positions_a = wires[0].positions();
+    let positions_b = wires[1].positions();
+
+    intersections
+        .iter()
+        .map(|intersection| {
+            let steps_a = positions_a
+                .iter()
+                .position(|pos| pos == intersection)
+                .unwrap()
+                + 1;
+            let steps_b = positions_b
+                .iter()
+                .position(|pos| pos == intersection)
+                .unwrap()
+                + 1;
+
+            steps_a + steps_b
+        })
         .min()
         .unwrap()
 }

@@ -87,7 +87,7 @@ fn solve_part_2(code: &[u32]) -> u32 {
             computer.run().unwrap();
             let res = computer.get_integer_at(0).unwrap();
 
-            if res == 19690720 {
+            if res == 19_690_720 {
                 return 100 * x + y;
             }
         }
